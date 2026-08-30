@@ -1,7 +1,7 @@
 {
   "name": "Mapa de l'Horta de Lleida",
   "short_name": "HortaLleida",
-  "description": "Mapa interactiu i formulari de consultes/incidències per a l'Horta de Lleida",
+  "description": "Mapa de consulta de l'Horta de Lleida i presentació d'escrits per a presidents d'AAVV",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#eef0e9",

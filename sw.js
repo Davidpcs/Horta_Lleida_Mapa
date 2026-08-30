@@ -1,4 +1,4 @@
-const CACHE_NAME = 'horta-lleida-v1';
+const CACHE_NAME = 'horta-lleida-v2';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -8,7 +8,6 @@ const ASSETS_TO_CACHE = [
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
 ];
 
-// Instal·lació del Service Worker
 self.addEventListener('install', (e) => {
   e.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
@@ -18,13 +17,12 @@ self.addEventListener('install', (e) => {
   self.skipWaiting();
 });
 
-// Activació i neteja de memòria cau antiga
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys().then((keys) => {
       return Promise.all(
         keys.map((key) => {
-            if (key !== CACHE_NAME) return caches.delete(key);
+          if (key !== CACHE_NAME) return caches.delete(key);
         })
       );
     })
@@ -32,17 +30,14 @@ self.addEventListener('activate', (e) => {
   self.clients.claim();
 });
 
-// Intercepció de peticions per funcionar Offline
 self.addEventListener('fetch', (e) => {
   e.respondWith(
     caches.match(e.request).then((cachedResponse) => {
       if (cachedResponse) {
         return cachedResponse;
       }
-      return fetch(e.request).then((networkResponse) => {
-        return networkResponse;
-      }).catch(() => {
-        // Retornar fallback si cal
+      return fetch(e.request).catch(() => {
+        // En cas de fallada de xarxa, continua utilitzant la memòria cau disponible
       });
     })
   );
