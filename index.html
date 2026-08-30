@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mapa interactiu i formulari de l'Horta de Lleida</title>
+    
+    <!-- Meta etiquetes per PWA i Android -->
+    <meta name="theme-color" content="#1d6b86">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/svg+xml" href="icon.svg">
+
+    <!-- Leaflet CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- Style -->
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #eef0e9;
+        }
+
+        #app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100dvh;
+            width: 100vw;
+        }
+
+        /* Header / Navbar */
+        header {
+            background-color: #1d6b86;
+            color: white;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+
+        header h1 {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        /* Main Content Layout */
+        main {
+            flex: 1;
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* Floating Panel / Controls */
+        .search-panel {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            right: 12px;
+            z-index: 500;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(8px);
+            padding: 10px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            gap: 8px;
+        }
+
+        .search-panel input {
+            flex: 1;
+            padding: 10px 14px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 1rem;
+            min-height: 44px;
+            outline: none;
+        }
+
+        .search-panel input:focus {
+            border-color: #1d6b86;
+        }
+
+        .btn {
+            background-color: #1d6b86;
+            color: white;
+            border: none;
+            padding: 0 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            min-height: 44px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.95rem;
+            transition: background 0.2s;
+        }
+
+        .btn:active {
+            background-color: #144a5e;
+        }
+
+        .btn-secondary {
+            background-color: #e0e0e0;
+            color: #333;
+        }
+
+        /* Locate Floating Button */
+        .btn-locate {
+            position: absolute;
+            bottom: 24px;
+            right: 16px;
+            z-index: 500;
+            width: 50px;
+            height: 50px;
+            border-radius: 25px;
+            background: white;
+            color: #1d6b86;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-locate svg {
+            width: 24px;
+            height: 24px;
+            fill: currentColor;
+        }
+
+        /* Floating Action Button for Form */
+        .btn-fab {
+            position: absolute;
+            bottom: 24px;
+            left: 16px;
+            z-index: 500;
+            background: #2e7d32;
+            color: white;
+            padding: 0 20px;
+            height: 50px;
+            border-radius: 25px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+        }
+
+        /* Modal Form */
+        dialog#form-dialog {
+            width: 90vw;
+            max-width: 500px;
+            border: none;
+            border-radius: 16px;
+            padding: 20px;
+            margin: auto;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+
+        dialog::backdrop {
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(2px);
+        }
+
+        .form-group {
+            margin-bottom: 14px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 1rem;
+            min-height: 44px;
+        }
+
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        /* Responsive Mobile adjustments */
+        @media (max-width: 600px) {
+            dialog#form-dialog {
+                width: 100vw;
+                height: 100dvh;
+                max-height: 100dvh;
+                border-radius: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    <header>
+        <h1>Horta de Lleida</h1>
+        <span id="pwa-status" style="font-size: 0.8rem; opacity: 0.8;">Offline Ready</span>
+    </header>
+
+    <main>
+        <!-- Search bar overlay -->
+        <div class="search-panel">
+            <input type="text" id="q" placeholder="Cerca partida, camí o partida..." />
+            <button class="btn" onclick="buscar()">Cercar</button>
+        </div>
+
+        <!-- Leaflet Map Container -->
+        <div id="map"></div>
+
+        <!-- Floating Buttons -->
+        <button class="btn-locate" onclick="geolocalitzar()" title="La meva ubicació">
+            <svg viewBox="0 0 24 24"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg>
+        </button>
+
+        <button class="btn-fab" onclick="obrirFormulari()">
+            <span>+ Nou Incident / Aportació</span>
+        </button>
+    </main>
+</div>
+
+<!-- Modal Formulari -->
+<dialog id="form-dialog">
+    <form method="dialog" id="rep-form">
+        <h2 style="margin-bottom: 15px; color: #1d6b86;">Registrar Incidència / Formulari</h2>
+        
+        <div class="form-group">
+            <label for="nom">Nom i Cognoms</label>
+            <input type="text" id="nom" required placeholder="El teu nom">
+        </div>
+
+        <div class="form-group">
+            <label for="partida">Partida / Zona de l'Horta</label>
+            <select id="partida">
+                <option value="rufea">Rufea</option>
+                <option value="butsenit">Butsenit</option>
+                <option value="mangana">La Mangranera</option>
+                <option value="caparella">La Caparella</option>
+                <option value="altres">Altres...</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="desc">Descripció o Comentari</label>
+            <textarea id="desc" rows="3" placeholder="Detalls sobre el camí, senyalització..."></textarea>
+        </div>
+
+        <div class="form-actions">
+            <button type="button" class="btn btn-secondary" onclick="tancarFormulari()">Cancel·lar</button>
+            <button type="submit" class="btn">Enviar</button>
+        </div>
+    </form>
+</dialog>
+
+<script>
+    // Configurar el mapa
+    const map = L.map('map').setView([41.6175, 0.6200], 13);
+
+    // Afegir capa OpenStreetMap
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    let userMarker = null;
+
+    // Funció de Geolocalització
+    function geolocalitzar() {
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(position => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                
+                if (userMarker) {
+                    userMarker.setLatLng([lat, lng]);
+                } else {
+                    userMarker = L.marker([lat, lng]).addTo(map).bindPopup("Ets aquí").openPopup();
+                }
+                map.setView([lat, lng], 16);
+            }, () => {
+                alert("No s'ha pogut obtenir la ubicació.");
+            }, { enableHighAccuracy: true });
+        } else {
+            alert("El teu navegador no admet geolocalització.");
+        }
+    }
+
+    // Modal Form handlers
+    const dialog = document.getElementById('form-dialog');
+    function obrirFormulari() { dialog.showModal(); }
+    function tancarFormulari() { dialog.close(); }
+
+    function buscar() {
+        const query = document.getElementById('q').value;
+        if(query) {
+            alert("Buscant: " + query);
+        }
+    }
+
+    // Registre del Service Worker per convertir en PWA Offline
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js')
+                .then(reg => console.log('SW registrat amb èxit:', reg.scope))
+                .catch(err => console.error('Error registrant SW:', err));
+        });
+    }
+</script>
+
+</body>
+</html>

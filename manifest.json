@@ -1,0 +1,18 @@
+{
+  "name": "Mapa de l'Horta de Lleida",
+  "short_name": "HortaLleida",
+  "description": "Mapa interactiu i formulari de consultes/incidències per a l'Horta de Lleida",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#eef0e9",
+  "theme_color": "#1d6b86",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
